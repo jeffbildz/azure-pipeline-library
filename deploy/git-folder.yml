@@ -1,5 +1,7 @@
 ## Deploy an artifact bundle (tar.gz) from an azure pipeline to another git repo using inherited credentials.
-## Author: Zachary Loeber
+## Original Author: Zachary Loeber
+## Revisions: Jeff Bilder
+
 parameters:
   repo: ''
   branch: 'master'
