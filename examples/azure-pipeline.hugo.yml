@@ -19,7 +19,7 @@ resources:
   - repository: pipelines
     type: github
     endpoint: github_services
-    name: zloeber/azure-pipeline-library
+    name: jeffbildz/azure-pipeline-library
 
 stages:
 ## Build Hugo site (DEV)
@@ -35,7 +35,7 @@ stages:
     artifact: 'devartifact'
 - template: deploy/git-folder.yml@pipelines
   parameters:
-    repo: 'https://github.com/zloeber/deck.loeber.live.git'
+    repo: 'https://github.com/jeffbildz/deck.loeber.live.git'
     branch: 'master'
     path: 'testsite'
     environment: 'dev'
@@ -54,7 +54,7 @@ stages:
     artifact: 'prodartifact'
 - template: deploy/git-folder.yml@pipelines
   parameters:
-    repo: 'https://github.com/zloeber/deck.loeber.live.git'
+    repo: 'https://github.com/jeffbildz/deck.loeber.live.git'
     branch: 'master'
     path: 'public'
     environment: 'production'
