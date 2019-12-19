@@ -1,2 +1,3 @@
 # azure-pipeline-library
-Azure pipeline for hosted website
+A library of azure pipeline code and tasks, largely for personal use.
+

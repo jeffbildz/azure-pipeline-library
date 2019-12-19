@@ -1,0 +1,61 @@
+## Deploy an artifact bundle (tar.gz) from an azure pipeline to another git repo using inherited credentials.
+## Author: Zachary Loeber
+parameters:
+  repo: ''
+  branch: 'master'
+  path: 'docs'
+  environment: ''
+  artifact: 'artifact'
+  target: "Repo"
+
+stages:
+- stage: Deploy_To_${{ parameters.target }}
+  displayName: 'Deploy: ${{ parameters.artifact }}'
+  jobs:
+  - deployment: deploy_repo_content
+    condition: succeeded()
+    pool:
+      vmImage: ubuntu-latest
+    environment: ${{ parameters.environment }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+            clean: true
+            submodules: true
+            persistCredentials: true
+          - task: DownloadPipelineArtifact@1
+            inputs:
+              artifact: '${{ parameters.artifact }}'
+              targetPath: $(Pipeline.Workspace)/_artifact
+          - bash: |
+              ls -al ${ARTIFACTPATH}
+              echo "Pulling in repo"
+              gitorigin=`git config remote.origin.url`
+              gitextraheader=`git config "http.${gitorigin}.extraheader"`
+              rm -rf _deploy
+              echo "Cloning ${REPO}"
+              git clone -c http.extraheader="${gitextraheader}" --depth 1 --branch ${BRANCH} ${REPO} _deploy
+              echo "Removing ${REPOPATH} contents and overwriting with artifact contents"
+              rm -rf ./_deploy/${REPOPATH}/*
+              mkdir -p ./_deploy/${REPOPATH}
+              tar -xzvf ${ARTIFACTPATH}/${ARTIFACT}/${ARTIFACT}.tar.gz --directory ./_deploy/${REPOPATH} --warning=none
+            displayName: 'Content Deployment'
+            env:
+              REPO: ${{ parameters.repo }}
+              BRANCH: ${{ parameters.branch }}
+              REPOPATH: ${{ parameters.path }}
+              ARTIFACTPATH: $(Pipeline.Workspace)/_artifact
+              ARTIFACT: ${{ parameters.artifact }}
+          - bash: |
+              echo "Commiting changes to repo"
+              gitorigin=`git config remote.origin.url`
+              gitextraheader=`git config "http.${gitorigin}.extraheader"`
+              cd ./_deploy
+              git config user.email "cicd@azurepipelines"
+              git config user.name "cicd"
+              git add --all .
+              git commit --no-verify -m 'cicd: Automated Deployment'
+              git -c http.extraheader="${gitextraheader}" push
+            displayName: 'Git Push Deployment'

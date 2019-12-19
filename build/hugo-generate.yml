@@ -1,0 +1,83 @@
+parameters:
+  initialize: true
+  version: '0.59.1'
+  disqusshortname: ''
+  binpath: '~/.local/bin' ## Binary path (default is usually ok)
+  outputpath: './public'  ## Hugo static output path (default is usually ok)
+  contentpath: './content' ## Site content path (default is usually ok)
+  baseurl: ''
+  testhtml: false
+  artifact: 'artifact'  ## Artifact name (if you are generating multiple sites in one pipeline you may need to change this)
+  drafts: 'false' ## to publish drafts set to 'true'
+  target: 'Site'
+
+stages:
+- stage: Build_${{ parameters.target }}
+  displayName: 'Build Site: ${{ parameters.baseurl }}'
+  jobs:
+  - job: hugo_generate
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - checkout: self
+      clean: true
+      submodules: true
+      persistCredentials: true
+    - ${{ if eq(parameters.initialize, 'true') }}:
+      - template: ../jobs/install-hugo.yml
+        parameters:
+          version: ${{ parameters.version }}
+          binpath: '${{ parameters.binpath }}'
+    - bash: |
+        mkdir -p ${OUTPUTPATH}
+        # This is required for publishing to github pages and custom domains
+        echo $(basename ${BASEURL}) > ./${OUTPUTPATH}/CNAME
+        if [ $DRAFTS = 'true' ]; then
+          echo "Building Drafts"
+          BUILDDRAFTS=--buildDrafts
+        else
+          BUILDDRAFTS=""
+        fi
+        echo "BASEURL: ${BASEURL}"
+        echo "CONTENTPATH: ${CONTENTPATH}"
+        echo "OUTPUTPATH: ${OUTPUTPATH}"
+        echo "BUILDDRAFTS: ${BUILDDRAFTS}"
+
+        ${BINPATH}/hugo \
+          --themesDir themes \
+          --configDir ./ \
+          -e production \
+          --contentDir "${CONTENTPATH}" \
+          --layoutDir layouts \
+          --config config.toml \
+          --baseURL ${BASEURL} \
+          --destination "${OUTPUTPATH}" \
+          --gc ${BUILDDRAFTS}
+      displayName: 'Generate Site (${{ parameters.baseurl }})'
+      env:
+        OUTPUTPATH: ${{ parameters.outputpath }}
+        CONTENTPATH: '${{ parameters.contentpath }}'
+        BINPATH: '${{ parameters.binpath }}'
+        BASEURL: '${{ parameters.baseurl }}'
+        HUGO_DISQUSSHORTNAME: '${{ parameters.disqusshortname }}'
+        DRAFTS: ${{ parameters.drafts }}
+
+    - task: ArchiveFiles@2
+      displayName: 'Archive Artifacts'
+      inputs:
+        rootFolderOrFile: ./${{ parameters.outputpath }}
+        includeRootFolder: false
+        archiveType: tar
+        tarCompression: gz
+        archiveFile: $(Pipeline.Workspace)/${{ parameters.artifact }}.tar.gz
+        replaceExistingArchive: true
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: $(Pipeline.Workspace)/${{ parameters.artifact }}.tar.gz
+        artifactName: ${{ parameters.artifact }}
+    - ${{ if eq(parameters.testhtml, 'true') }}:
+      - template: ../jobs/test-html.yml
+        parameters:
+          initialize: ${{ parameters.initialize }}
+          binpath: '${{ parameters.binpath }}'
+          path: '${{ parameters.outputpath }}'
