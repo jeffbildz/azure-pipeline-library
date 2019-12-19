@@ -26,7 +26,7 @@ stages:
 - template: build/hugo-generate.yml@pipelines
   parameters:
     initialize: true
-    baseurl: 'https://zacharyloeber-decks-dev.onrender.com/'
+    baseurl: 'https://jeffrybilder-decks-dev.onrender.com/'
     testhtml: 'false'
     outputpath: './testsite'
     contentpath: './content'
@@ -35,7 +35,7 @@ stages:
     artifact: 'devartifact'
 - template: deploy/git-folder.yml@pipelines
   parameters:
-    repo: 'https://github.com/jeffbildz/deck.loeber.live.git'
+    repo: 'https://github.com/jeffbildz/deck.bilder.com.git'
     branch: 'master'
     path: 'testsite'
     environment: 'dev'
@@ -46,7 +46,7 @@ stages:
 - template: build/hugo-generate.yml@pipelines
   parameters:
     initialize: true
-    baseurl: 'https://deck.loeber.live/'
+    baseurl: 'https://deck.bilder.com/'
     testhtml: 'false'
     outputpath: './public'
     contentpath: './content'
@@ -54,7 +54,7 @@ stages:
     artifact: 'prodartifact'
 - template: deploy/git-folder.yml@pipelines
   parameters:
-    repo: 'https://github.com/jeffbildz/deck.loeber.live.git'
+    repo: 'https://github.com/jeffbildz/deck.bilder.com.git'
     branch: 'master'
     path: 'public'
     environment: 'production'
